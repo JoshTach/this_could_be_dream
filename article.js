@@ -61,6 +61,8 @@ function fmtDate(ms) {
   return Number.isNaN(d.getTime()) ? "" : d.toLocaleString(undefined, { year: "numeric", month: "long", day: "numeric" });
 }
 
+const articlePageEl = document.getElementById("articlePage");
+const heroEl = document.getElementById("articleHero");
 const loadingEl = document.getElementById("articleLoading");
 const errorEl = document.getElementById("articleError");
 const contentEl = document.getElementById("articleContent");
@@ -68,6 +70,24 @@ const ogLink = document.getElementById("articleOgLink");
 const metaEl = document.getElementById("articleMeta");
 const titleEl = document.getElementById("articleTitle");
 const bodyEl = document.getElementById("articleBody");
+
+function setGameTheme(game) {
+  if (!articlePageEl || !heroEl) return;
+  const headerUrl = game.steamAppId
+    ? `https://cdn.akamai.steamstatic.com/steam/apps/${game.steamAppId}/header.jpg`
+    : null;
+  if (headerUrl) {
+    articlePageEl.classList.add("articlePage--themed");
+    articlePageEl.style.setProperty("--article-bg", `url("${headerUrl}")`);
+    heroEl.innerHTML = `<img src="${escapeHtml(headerUrl)}" alt="" />`;
+    heroEl.hidden = false;
+  } else {
+    articlePageEl.classList.remove("articlePage--themed");
+    articlePageEl.style.removeProperty("--article-bg");
+    heroEl.innerHTML = "";
+    heroEl.hidden = true;
+  }
+}
 
 function showError(msg) {
   loadingEl.hidden = true;
@@ -78,6 +98,7 @@ function showError(msg) {
 }
 
 function showContent(game, item) {
+  setGameTheme(game);
   loadingEl.hidden = true;
   errorEl.hidden = true;
   contentEl.hidden = false;
@@ -95,6 +116,7 @@ function showContent(game, item) {
 }
 
 function showNonSteamPlaceholder(game) {
+  setGameTheme(game);
   loadingEl.hidden = true;
   errorEl.hidden = true;
   contentEl.hidden = false;

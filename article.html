@@ -21,7 +21,7 @@
       </div>
     </header>
 
-    <main class="container container--article">
+    <main id="articlePage" class="articlePage container">
       <nav class="articleNav">
         <a href="./index.html" class="articleNav__back">← Back to games</a>
         <a id="articleOgLink" href="#" target="_blank" rel="noreferrer" class="articleNav__og">
@@ -30,12 +30,15 @@
       </nav>
 
       <article id="articleRoot" class="article">
-        <div id="articleLoading" class="article__loading">Loading…</div>
-        <div id="articleError" class="article__error" hidden></div>
-        <div id="articleContent" class="article__content" hidden>
-          <p id="articleMeta" class="article__meta"></p>
-          <h1 id="articleTitle" class="article__title"></h1>
-          <div id="articleBody" class="article__body"></div>
+        <div id="articleHero" class="article__hero" aria-hidden="true"></div>
+        <div class="article__inner">
+          <div id="articleLoading" class="article__loading">Loading…</div>
+          <div id="articleError" class="article__error" hidden></div>
+          <div id="articleContent" class="article__content" hidden>
+            <p id="articleMeta" class="article__meta"></p>
+            <h1 id="articleTitle" class="article__title"></h1>
+            <div id="articleBody" class="article__body"></div>
+          </div>
         </div>
       </article>
     </main>
