@@ -187,7 +187,7 @@ function fmtDateFromMs(ms) {
   return Number.isNaN(d.getTime()) ? "" : d.toLocaleString(undefined, { year: "numeric", month: "long", day: "numeric" });
 }
 
-function showRssArticle(game, item) {
+function showRssArticle(game, item, fullContent = null) {
   setGameTheme(game);
   loadingEl.hidden = true;
   errorEl.hidden = true;
@@ -198,10 +198,32 @@ function showRssArticle(game, item) {
   metaEl.textContent = `${item.sourceName ?? "Riot News"} • ${fmtDateFromMs(item.dateMs)}`;
   titleEl.textContent = item.title || "Patch notes";
   const excerpt = String(item.excerpt ?? "").trim();
-  bodyEl.innerHTML = excerpt
-    ? `<p>${escapeHtml(excerpt)}</p><p><a href="${escapeHtml(item.url || "#")}" rel="noopener">Read the full article on the official site →</a></p>`
-    : "<p>No excerpt available. Use the link above to read the original.</p>";
-  if (summaryEl) summaryEl.hidden = true;
+  const hasFull = fullContent && String(fullContent).trim().length > 200;
+  if (hasFull) {
+    const rawBlocks = String(fullContent)
+      .trim()
+      .split(/\n\n+/)
+      .map((b) => b.trim())
+      .filter(Boolean);
+    const paragraphs = [];
+    for (const block of rawBlocks) {
+      if (/\bFixed\s+/i.test(block)) {
+        const parts = block.split(/(?=Fixed\s+)/i).map((s) => s.trim()).filter(Boolean);
+        paragraphs.push(...parts);
+      } else {
+        paragraphs.push(block);
+      }
+    }
+    bodyEl.innerHTML =
+      paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join("") +
+      `<p><a href="${escapeHtml(item.url || "#")}" rel="noopener">Read the full article on the official site →</a></p>`;
+    void fetchAndShowSummary(fullContent, game.name, titleEl.textContent);
+  } else {
+    bodyEl.innerHTML = excerpt
+      ? `<p>${escapeHtml(excerpt)}</p><p><a href="${escapeHtml(item.url || "#")}" rel="noopener">Read the full article on the official site →</a></p>`
+      : "<p>No excerpt available. Use the link above to read the original.</p>";
+    if (summaryEl) summaryEl.hidden = true;
+  }
 }
 
 async function loadArticle() {
@@ -223,7 +245,21 @@ async function loadArticle() {
         const items = parseRssItems(xml, { id: game.id, name: game.name });
         const chosen = chooseBestRssItem(items, game.keywords || ["patch", "update", "notes"]);
         if (chosen) {
-          showRssArticle(game, chosen);
+          let fullContent = null;
+          if (chosen.url) {
+            try {
+              const r = await fetch(
+                `${window.location.origin}/api/fetch-article?url=${encodeURIComponent(chosen.url)}`
+              );
+              if (r.ok) {
+                const data = await r.json();
+                fullContent = data?.content ?? null;
+              }
+            } catch {
+              // Keep fullContent null, show excerpt only
+            }
+          }
+          showRssArticle(game, chosen, fullContent);
           return;
         }
       } catch {
