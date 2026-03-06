@@ -574,13 +574,19 @@ function updateAuthUI(user) {
       ? `<img class="auth-user__avatar" src="${escapeAttr(avatarUrl)}" alt="" width="28" height="28" />`
       : `<span class="auth-user__avatar auth-user__avatar--fallback">${escapeHtml(String(name).slice(0, 1).toUpperCase())}</span>`;
     authContainer.innerHTML = `
-      <div class="auth-user">
-        ${avatarHtml}
-        <span class="auth-user__name">${name}</span>
-        <button id="signOutBtn" class="btn btn--ghost btn--sm" type="button">Sign out</button>
+      <div class="auth-user-wrap">
+        <div class="auth-user">
+          ${avatarHtml}
+          <span class="auth-user__name">${name}</span>
+          <button id="testNotifyBtn" class="btn btn--ghost btn--sm" type="button" title="Send a test notification to your Discord">Test DM</button>
+          <button id="signOutBtn" class="btn btn--ghost btn--sm" type="button">Sign out</button>
+        </div>
+        <span id="testNotifyStatus" class="auth-test-status" aria-live="polite" hidden></span>
       </div>`;
     const signOutBtn = document.getElementById("signOutBtn");
     if (signOutBtn) signOutBtn.addEventListener("click", handleSignOut);
+    const testNotifyBtn = document.getElementById("testNotifyBtn");
+    if (testNotifyBtn) testNotifyBtn.addEventListener("click", handleTestNotify);
   } else {
     authContainer.innerHTML = `
       <button id="discordSignInBtn" class="btn btn--discord" type="button">
@@ -610,6 +616,55 @@ async function handleLoginWithDiscord() {
 async function handleSignOut() {
   if (!supabaseClient) return;
   await supabaseClient.auth.signOut();
+}
+
+async function handleTestNotify() {
+  const btn = document.getElementById("testNotifyBtn");
+  const statusEl = document.getElementById("testNotifyStatus");
+  if (!supabaseClient || !btn) return;
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session?.access_token) {
+    if (statusEl) {
+      statusEl.textContent = "Sign in with Discord first.";
+      statusEl.hidden = false;
+      statusEl.classList.remove("auth-test-status--ok");
+      statusEl.classList.add("auth-test-status--err");
+    }
+    return;
+  }
+  btn.disabled = true;
+  if (statusEl) {
+    statusEl.textContent = "Sending…";
+    statusEl.hidden = false;
+    statusEl.classList.remove("auth-test-status--ok", "auth-test-status--err");
+  }
+  try {
+    const res = await fetch(`${window.location.origin}/api/test-notify`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (statusEl) {
+      statusEl.hidden = false;
+      if (res.ok) {
+        statusEl.textContent = "Test DM sent. Check Discord.";
+        statusEl.classList.add("auth-test-status--ok");
+        statusEl.classList.remove("auth-test-status--err");
+      } else {
+        statusEl.textContent = data?.error || `Failed (${res.status})`;
+        statusEl.classList.add("auth-test-status--err");
+        statusEl.classList.remove("auth-test-status--ok");
+      }
+    }
+  } catch (e) {
+    if (statusEl) {
+      statusEl.textContent = "Network error. Try again.";
+      statusEl.hidden = false;
+      statusEl.classList.add("auth-test-status--err");
+      statusEl.classList.remove("auth-test-status--ok");
+    }
+  }
+  btn.disabled = false;
 }
 
 async function upsertProfile(user) {
