@@ -1,0 +1,11 @@
+{
+  "rewrites": [
+    { "source": "/article", "destination": "/article.html" }
+  ],
+  "crons": [
+    {
+      "path": "/api/notify-subscribers",
+      "schedule": "0 12 * * *"
+    }
+  ]
+}

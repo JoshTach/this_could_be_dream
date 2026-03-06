@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Game Updates + Gaming News</title>
+    <meta
+      name="description"
+      content="Latest patch notes/updates for popular games and recent gaming news, with search."
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="header">
+      <div class="container header__inner">
+        <div class="brand">
+          <div class="brand__logo" aria-hidden="true">G</div>
+          <div class="brand__text">
+            <div class="brand__name">GamePulse</div>
+            <div class="brand__tagline">Latest updates + gaming news</div>
+          </div>
+        </div>
+
+        <div class="header__actions">
+          <div id="authContainer" class="header__auth" aria-live="polite"></div>
+          <a
+            class="btn btn--primary"
+            href="#games"
+            aria-label="Jump to games"
+            >Browse games</a
+          >
+        </div>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="hero">
+        <h1 class="hero__title">Find the latest patch notes, fast.</h1>
+        <p class="hero__subtitle">
+          Search for a game to see its most recent update/patch note entry, plus
+          a live feed of gaming news.
+        </p>
+
+        <div class="search">
+          <label class="search__label" for="gameSearch">Search games</label>
+          <div class="search__row">
+            <input
+              id="gameSearch"
+              class="input"
+              type="search"
+              placeholder="Try: Dota, Counter-Strike, Elden Ring…"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <button id="clearSearchBtn" class="btn" type="button">Clear</button>
+          </div>
+          <div class="search__meta">
+            <span id="statusText" class="statusText">Loading…</span>
+            <span id="lastUpdatedText" class="muted"></span>
+          </div>
+        </div>
+      </section>
+
+      <section id="games" class="section">
+        <div class="section__header">
+          <h2 class="section__title">Popular games</h2>
+          <p class="section__hint">
+            Most recent item is sourced from each game’s public news/update feed
+            (often Steam news for that app).
+          </p>
+        </div>
+
+        <div id="gamesGrid" class="grid" aria-live="polite"></div>
+      </section>
+
+      <section id="news" class="section">
+        <div class="section__header">
+          <h2 class="section__title">Gaming news</h2>
+          <p class="section__hint">Aggregated from multiple RSS feeds.</p>
+        </div>
+
+        <div id="newsList" class="news" aria-live="polite"></div>
+      </section>
+
+      <footer class="footer">
+        <div class="footer__row">
+          <span class="muted"
+            >Built from scratch. Sources link out to the original sites.</span
+          >
+          <a class="link" href="./README.md">Setup / customize</a>
+        </div>
+      </footer>
+    </main>
+
+    <!-- Supabase browser client (global `window.supabase`) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

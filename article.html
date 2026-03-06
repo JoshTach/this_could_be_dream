@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Patch notes – GamePulse</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="header">
+      <div class="container header__inner">
+        <div class="brand">
+          <a href="./index.html" class="brand brand--link">
+            <div class="brand__logo" aria-hidden="true">G</div>
+            <div class="brand__text">
+              <div class="brand__name">GamePulse</div>
+              <div class="brand__tagline">Latest updates + gaming news</div>
+            </div>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main class="container container--article">
+      <nav class="articleNav">
+        <a href="./index.html" class="articleNav__back">← Back to games</a>
+        <a id="articleOgLink" href="#" target="_blank" rel="noreferrer" class="articleNav__og">
+          Read original patch notes →
+        </a>
+      </nav>
+
+      <article id="articleRoot" class="article">
+        <div id="articleLoading" class="article__loading">Loading…</div>
+        <div id="articleError" class="article__error" hidden></div>
+        <div id="articleContent" class="article__content" hidden>
+          <p id="articleMeta" class="article__meta"></p>
+          <h1 id="articleTitle" class="article__title"></h1>
+          <div id="articleBody" class="article__body"></div>
+        </div>
+      </article>
+    </main>
+
+    <script type="module" src="./article.js"></script>
+  </body>
+</html>
