@@ -107,12 +107,21 @@ function showContent(game, item) {
   metaEl.textContent = `${item.source || "Steam News"} • ${fmtDate((Number(item.date) || 0) * 1000)}`;
   titleEl.textContent = item.title || "Patch notes";
   const body = stripHtml(String(item.contents ?? ""));
-  bodyEl.innerHTML = body
-    ? body
-        .split(/\n\n+/)
-        .map((p) => `<p>${escapeHtml(p.trim())}</p>`)
-        .join("")
-    : "<p>No content available. Use the link above to read the original.</p>";
+  if (!body.trim()) {
+    bodyEl.innerHTML = "<p>No content available. Use the link above to read the original.</p>";
+    return;
+  }
+  const rawBlocks = body.split(/\n\n+/).map((b) => b.trim()).filter(Boolean);
+  const paragraphs = [];
+  for (const block of rawBlocks) {
+    if (block.length > 280 && /\s+Fixed\s/i.test(block)) {
+      const parts = block.split(/(?<=\.)\s+(?=Fixed\s)/i).map((s) => s.trim()).filter(Boolean);
+      paragraphs.push(...parts);
+    } else {
+      paragraphs.push(block);
+    }
+  }
+  bodyEl.innerHTML = paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join("");
 }
 
 function showNonSteamPlaceholder(game) {
