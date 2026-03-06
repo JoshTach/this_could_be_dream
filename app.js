@@ -377,7 +377,16 @@ async function fetchFeed(feed, { forceRefresh, signal } = {}) {
     if (cached) return cached;
   }
 
-  const xml = await fetchViaProxy(feed.url, { signal });
+  let xml;
+  const apiUrl = `${window.location.origin}/api/feed?url=${encodeURIComponent(feed.url)}`;
+  try {
+    const res = await fetch(apiUrl, { signal });
+    if (res.ok) xml = await res.text();
+  } catch {
+    // Same-origin API not available (e.g. local dev without Vercel)
+  }
+  if (!xml) xml = await fetchViaProxy(feed.url, { signal });
+
   const items = parseRssItems(xml, feed)
     .sort((a, b) => (b.dateMs || 0) - (a.dateMs || 0))
     .slice(0, MAX_FEED_ITEMS_PER_SOURCE);
@@ -769,12 +778,10 @@ async function loadAll() {
   );
 
   let gameResults;
-  let feedResults;
   try {
-    [, gameResults, feedResults] = await Promise.all([
+    [, gameResults] = await Promise.all([
       sessionPromise,
       Promise.all(gamePromises),
-      Promise.all(feedPromises),
     ]);
   } catch (e) {
     if (hasAnyCache) {
@@ -786,14 +793,8 @@ async function loadAll() {
     return;
   }
 
-  const merged = feedResults
-    .flat()
-    .filter((x) => x && x.title && x.url)
-    .sort((a, b) => (b.dateMs || 0) - (a.dateMs || 0))
-    .slice(0, MAX_NEWS_ITEMS);
-
   gamesGrid.innerHTML = "";
-  newsList.innerHTML = "";
+  newsList.innerHTML = '<div class="newsItem"><div class="card__body">Loading news…</div></div>';
   for (const r of gameResults) {
     const subscribed = subscribedGameIds.has(r.game.id);
     const card = r.error
@@ -801,19 +802,33 @@ async function loadAll() {
       : renderGameCard(r.game, r.update, { subscribed, currentUser: currentAuthUser });
     gamesGrid.appendChild(card);
   }
-  if (merged.length === 0) {
-    newsList.innerHTML =
-      '<div class="newsItem"><div class="card__body">No news items loaded. The proxy or sources may be temporarily unavailable.</div></div>';
-  } else {
-    for (const item of merged) {
-      newsList.appendChild(renderNewsItem(item));
-    }
-  }
 
   setLastUpdated(nowMs());
   applySearchFilter();
   if (!gameSearch.value?.trim()) setStatus(`Showing ${GAMES.length} games`);
   void logVisit();
+
+  Promise.all(feedPromises)
+    .then((feedResults) => {
+      const merged = feedResults
+        .flat()
+        .filter((x) => x && x.title && x.url)
+        .sort((a, b) => (b.dateMs || 0) - (a.dateMs || 0))
+        .slice(0, MAX_NEWS_ITEMS);
+      newsList.innerHTML = "";
+      if (merged.length === 0) {
+        newsList.innerHTML =
+          '<div class="newsItem"><div class="card__body">No news items loaded. The proxy or sources may be temporarily unavailable.</div></div>';
+      } else {
+        for (const item of merged) {
+          newsList.appendChild(renderNewsItem(item));
+        }
+      }
+    })
+    .catch(() => {
+      newsList.innerHTML =
+        '<div class="newsItem"><div class="card__body">News feed couldn’t load. The public CORS proxy may be temporarily unavailable.</div></div>';
+    });
 }
 
 function renderFallbackCards() {
