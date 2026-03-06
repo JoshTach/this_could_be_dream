@@ -235,6 +235,8 @@ For the notify cron (Vercel → Project → Settings → Environment Variables),
 - `DISCORD_BOT_TOKEN` – your bot token from the Discord Developer Portal.
 - `SITE_URL` – your site’s public URL (e.g. `https://your-app.vercel.app`) so DMs can link to it.
 
+**Optional – AI patch summary:** To show a short “At a glance” summary at the top of each patch-notes article, add `OPENAI_API_KEY` (from [OpenAI](https://platform.openai.com/api-keys)). The `/api/summarize-patch` endpoint uses it to generate a 2–4 sentence narrative (buffs, nerfs, why it matters). Summaries are cached per patch in the browser.
+
 ### 3. Cron job (Vercel)
 
 The repo includes `api/notify-subscribers.js`, which checks for new game updates and DMs subscribers. On Vercel, add a cron in **Settings → Cron Jobs** (or use `vercel.json`):

@@ -69,7 +69,49 @@ const contentEl = document.getElementById("articleContent");
 const ogLink = document.getElementById("articleOgLink");
 const metaEl = document.getElementById("articleMeta");
 const titleEl = document.getElementById("articleTitle");
+const summaryEl = document.getElementById("articleSummary");
 const bodyEl = document.getElementById("articleBody");
+
+function simpleHash(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+  return "gp_summary_" + Math.abs(h).toString(36);
+}
+
+async function fetchAndShowSummary(content, gameName, title) {
+  if (!summaryEl || !content) return;
+  const cacheKey = simpleHash(content);
+  try {
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (parsed && typeof parsed.summary === "string") {
+        summaryEl.innerHTML = `<span class="article__summary-label">At a glance</span><p class="article__summary-text">${escapeHtml(parsed.summary)}</p>`;
+        summaryEl.hidden = false;
+        return;
+      }
+    }
+  } catch {}
+
+  try {
+    const r = await fetch(`${window.location.origin}/api/summarize-patch`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: content.slice(0, 12000), gameName, title }),
+    });
+    if (!r.ok) return;
+    const data = await r.json();
+    const summary = data?.summary;
+    if (!summary || typeof summary !== "string") return;
+    try {
+      localStorage.setItem(cacheKey, JSON.stringify({ summary }));
+    } catch {}
+    summaryEl.innerHTML = `<span class="article__summary-label">At a glance</span><p class="article__summary-text">${escapeHtml(summary)}</p>`;
+    summaryEl.hidden = false;
+  } catch {
+    // Summary optional; leave hidden on failure
+  }
+}
 
 function setGameTheme(game) {
   if (!articlePageEl || !heroEl) return;
@@ -114,14 +156,15 @@ function showContent(game, item) {
   const rawBlocks = body.split(/\n\n+/).map((b) => b.trim()).filter(Boolean);
   const paragraphs = [];
   for (const block of rawBlocks) {
-    if (block.length > 280 && /\s+Fixed\s/i.test(block)) {
-      const parts = block.split(/(?<=\.)\s+(?=Fixed\s)/i).map((s) => s.trim()).filter(Boolean);
+    if (/\bFixed\s+/i.test(block)) {
+      const parts = block.split(/(?=Fixed\s+)/i).map((s) => s.trim()).filter(Boolean);
       paragraphs.push(...parts);
     } else {
       paragraphs.push(block);
     }
   }
   bodyEl.innerHTML = paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join("");
+  void fetchAndShowSummary(body, game.name, titleEl.textContent);
 }
 
 function showNonSteamPlaceholder(game) {
