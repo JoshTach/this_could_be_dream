@@ -59,14 +59,21 @@ function extractText(html) {
     : mainMatch
       ? mainMatch[1]
       : cleaned.replace(/^[\s\S]*<body[^>]*>/i, "").replace(/<\/body>[\s\S]*$/i, "");
-  let text = contentBlock
+  // Preserve paragraph/block structure: block-level closers become newlines
+  let block = contentBlock
+    .replace(/<\/(?:p|div|h[1-6]|li|tr|section|article|blockquote)>/gi, "\n")
+    .replace(/<br\s*\/?>/gi, "\n");
+  let text = block
     .replace(/<[^>]+>/g, " ")
-    .replace(/\s+/g, " ")
     .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n[ \t]+/g, "\n")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
     .trim();
   if (text.length < 500) {
     const fromNext = extractFromNextData(html);

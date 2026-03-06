@@ -114,11 +114,13 @@ async function fetchAndShowSummary(content, gameName, title) {
   }
 }
 
-function setGameTheme(game) {
+function setGameTheme(game, itemOrOptions = null) {
   if (!articlePageEl || !heroEl) return;
-  const headerUrl = game.steamAppId
-    ? `https://cdn.akamai.steamstatic.com/steam/apps/${game.steamAppId}/header.jpg`
-    : null;
+  const item = itemOrOptions && typeof itemOrOptions === "object" ? itemOrOptions : null;
+  const headerUrl =
+    game.steamAppId
+      ? `https://cdn.akamai.steamstatic.com/steam/apps/${game.steamAppId}/header.jpg`
+      : (item?.imageUrl || game.heroImage || null);
   if (headerUrl) {
     articlePageEl.classList.add("articlePage--themed");
     articlePageEl.style.setProperty("--article-bg", `url("${headerUrl}")`);
@@ -187,8 +189,36 @@ function fmtDateFromMs(ms) {
   return Number.isNaN(d.getTime()) ? "" : d.toLocaleString(undefined, { year: "numeric", month: "long", day: "numeric" });
 }
 
+function isBlockHeading(block) {
+  const line = block.trim();
+  if (!line) return false;
+  const singleLine = line.indexOf("\n") === -1;
+  if (/^###?\s+.+/.test(line)) return true;
+  if (singleLine && line.length <= 45 && /^[A-Z][a-zA-Z'\-\s]+$/.test(line) && !/\./.test(line)) return true;
+  if (singleLine && line.length <= 60 && /^(Patch Highlights|Brawl Returns|Act \d|Season \d|Welcome to)/i.test(line)) return true;
+  return false;
+}
+
+function renderArticleBody(blocks) {
+  const out = [];
+  for (const block of blocks) {
+    const trimmed = block.trim();
+    if (!trimmed) continue;
+    if (isBlockHeading(trimmed)) {
+      const text = trimmed.replace(/^###?\s*/, "");
+      out.push(`<h2 class="article__heading">${escapeHtml(text)}</h2>`);
+    } else {
+      const parts = /\bFixed\s+/i.test(trimmed)
+        ? trimmed.split(/(?=Fixed\s+)/i).map((s) => s.trim()).filter(Boolean)
+        : [trimmed];
+      for (const p of parts) out.push(`<p>${escapeHtml(p)}</p>`);
+    }
+  }
+  return out.join("");
+}
+
 function showRssArticle(game, item, fullContent = null) {
-  setGameTheme(game);
+  setGameTheme(game, item);
   loadingEl.hidden = true;
   errorEl.hidden = true;
   contentEl.hidden = false;
@@ -205,22 +235,13 @@ function showRssArticle(game, item, fullContent = null) {
       .split(/\n\n+/)
       .map((b) => b.trim())
       .filter(Boolean);
-    const paragraphs = [];
-    for (const block of rawBlocks) {
-      if (/\bFixed\s+/i.test(block)) {
-        const parts = block.split(/(?=Fixed\s+)/i).map((s) => s.trim()).filter(Boolean);
-        paragraphs.push(...parts);
-      } else {
-        paragraphs.push(block);
-      }
-    }
     bodyEl.innerHTML =
-      paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join("") +
-      `<p><a href="${escapeHtml(item.url || "#")}" rel="noopener">Read the full article on the official site →</a></p>`;
+      renderArticleBody(rawBlocks) +
+      `<p class="article__read-more"><a href="${escapeHtml(item.url || "#")}" rel="noopener">Read the full article on the official site →</a></p>`;
     void fetchAndShowSummary(fullContent, game.name, titleEl.textContent);
   } else {
     bodyEl.innerHTML = excerpt
-      ? `<p>${escapeHtml(excerpt)}</p><p><a href="${escapeHtml(item.url || "#")}" rel="noopener">Read the full article on the official site →</a></p>`
+      ? `<p>${escapeHtml(excerpt)}</p><p class="article__read-more"><a href="${escapeHtml(item.url || "#")}" rel="noopener">Read the full article on the official site →</a></p>`
       : "<p>No excerpt available. Use the link above to read the original.</p>";
     if (summaryEl) summaryEl.hidden = true;
   }

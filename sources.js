@@ -98,7 +98,7 @@ export const GAMES = [
     keywords: ["update", "patch"],
     officialUrl: "https://www.rockstargames.com/reddeadredemption2",
   },
-  // Riot Games (via community feed data.rito.news – not on Steam)
+  // Riot Games (via community feed data.rito.news – not on Steam; hero from RSS enclosure)
   {
     id: "valorant",
     name: "VALORANT",

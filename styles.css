@@ -732,6 +732,34 @@ a {
   margin-bottom: 0;
 }
 
+.article__body .article__heading {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 1.75em 0 0.6em;
+  color: rgba(255, 255, 255, 0.98);
+  letter-spacing: 0.02em;
+}
+
+.article__body .article__heading:first-child {
+  margin-top: 0;
+}
+
+.article__body .article__read-more {
+  margin-top: 1.5em;
+  margin-bottom: 0;
+  padding-top: 0.5em;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.article__body .article__read-more a {
+  color: rgba(255, 255, 255, 0.85);
+  text-decoration: underline;
+}
+
+.article__body .article__read-more a:hover {
+  color: #fff;
+}
+
 @media (max-width: 900px) {
   .card {
     grid-column: span 12;

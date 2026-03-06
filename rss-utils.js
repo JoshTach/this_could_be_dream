@@ -61,6 +61,8 @@ function parseRssItems(xmlText, feedMeta) {
     const pubDateRaw = (it.querySelector("pubDate")?.textContent ?? "").trim();
     const dateMs = Date.parse(pubDateRaw);
     const desc = stripHtml(it.querySelector("description")?.textContent ?? "");
+    const enclosure = it.querySelector("enclosure");
+    const imageUrl = (enclosure?.getAttribute("url") ?? "").trim();
 
     if (!title || !link) continue;
     items.push({
@@ -70,6 +72,7 @@ function parseRssItems(xmlText, feedMeta) {
       url: link,
       dateMs: Number.isNaN(dateMs) ? 0 : dateMs,
       excerpt: clampText(desc, 220),
+      imageUrl: imageUrl || undefined,
     });
   }
 
@@ -84,6 +87,8 @@ function parseRssItems(xmlText, feedMeta) {
         "").trim();
     const dateMs = Date.parse(updatedRaw);
     const summary = stripHtml(it.querySelector("summary")?.textContent ?? "");
+    const enclosure = it.querySelector("enclosure");
+    const imageUrl = (enclosure?.getAttribute("url") ?? "").trim();
 
     if (!title || !link) continue;
     items.push({
@@ -93,6 +98,7 @@ function parseRssItems(xmlText, feedMeta) {
       url: link,
       dateMs: Number.isNaN(dateMs) ? 0 : dateMs,
       excerpt: clampText(summary, 220),
+      imageUrl: imageUrl || undefined,
     });
   }
 
