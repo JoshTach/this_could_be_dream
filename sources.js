@@ -98,18 +98,20 @@ export const GAMES = [
     keywords: ["update", "patch"],
     officialUrl: "https://www.rockstargames.com/reddeadredemption2",
   },
-  // Popular PC games (non-Steam – link to official sites)
+  // Riot Games (via community feed data.rito.news – not on Steam)
   {
     id: "valorant",
     name: "VALORANT",
-    keywords: ["patch", "update"],
+    keywords: ["patch", "update", "notes"],
     officialUrl: "https://playvalorant.com/",
+    rssUrl: "https://data.rito.news/val/en-us/news.rss",
   },
   {
     id: "lol",
     name: "League of Legends",
     keywords: ["patch", "update", "notes"],
     officialUrl: "https://www.leagueoflegends.com/",
+    rssUrl: "https://data.rito.news/lol/en-us/news.rss",
   },
   {
     id: "tarkov",

@@ -12,6 +12,7 @@ const ALLOWED_HOSTS = [
   "feeds.feedburner.com",
   "www.eurogamer.net",
   "eurogamer.net",
+  "data.rito.news",
 ];
 
 function isAllowedUrl(urlString) {

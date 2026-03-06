@@ -1,4 +1,5 @@
 import { GAMES, NEWS_FEEDS } from "./sources.js";
+import { parseRssItems, chooseBestRssItem, fetchFeedXml } from "./rss-utils.js";
 
 const CACHE_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours – reduces load on Steam; stale fallback covers failures
 const MAX_NEWS_ITEMS = 30;
@@ -261,6 +262,28 @@ async function getLatestGameUpdate(game, { forceRefresh, signal } = {}) {
       const cached = cacheGet(cacheKey);
       if (cached) return cached;
     }
+    if (game.rssUrl) {
+      try {
+        const xml = await fetchFeedXml(game.rssUrl, { signal });
+        const items = parseRssItems(xml, { id: game.id, name: game.name });
+        const chosen = chooseBestRssItem(items, game.keywords);
+        if (chosen) {
+          const data = {
+            source: chosen.sourceName ?? "Riot News",
+            title: String(chosen.title ?? "Untitled"),
+            url: String(chosen.url ?? game.officialUrl ?? "#"),
+            dateMs: Number(chosen.dateMs) || 0,
+            excerpt: clampText(String(chosen.excerpt ?? ""), 220),
+          };
+          cacheSet(cacheKey, data);
+          return data;
+        }
+      } catch (e) {
+        const stale = cacheGetStale(cacheKey);
+        if (stale) return stale;
+        throw e;
+      }
+    }
     const data = {
       source: "Official site",
       title: `${game.name} – news & updates`,
@@ -309,65 +332,6 @@ async function getLatestGameUpdate(game, { forceRefresh, signal } = {}) {
 
   cacheSet(cacheKey, data);
   return data;
-}
-
-function parseRssItems(xmlText, feedMeta) {
-  const doc = new DOMParser().parseFromString(xmlText, "text/xml");
-
-  // RSS 2.0: <item>, Atom: <entry>
-  const rssItems = Array.from(doc.querySelectorAll("item"));
-  const atomEntries = Array.from(doc.querySelectorAll("entry"));
-
-  if (rssItems.length === 0 && atomEntries.length === 0) {
-    const parserError = doc.querySelector("parsererror");
-    if (parserError) throw new Error("Invalid XML");
-    return [];
-  }
-
-  const items = [];
-
-  for (const it of rssItems) {
-    const title = stripHtml(it.querySelector("title")?.textContent ?? "");
-    const link = (it.querySelector("link")?.textContent ?? "").trim();
-    const pubDateRaw = (it.querySelector("pubDate")?.textContent ?? "").trim();
-    const dateMs = Date.parse(pubDateRaw);
-    const desc = stripHtml(it.querySelector("description")?.textContent ?? "");
-
-    if (!title || !link) continue;
-    items.push({
-      sourceId: feedMeta.id,
-      sourceName: feedMeta.name,
-      title,
-      url: link,
-      dateMs: Number.isNaN(dateMs) ? 0 : dateMs,
-      excerpt: clampText(desc, 220),
-    });
-  }
-
-  for (const it of atomEntries) {
-    const title = stripHtml(it.querySelector("title")?.textContent ?? "");
-    const linkEl = it.querySelector("link");
-    const link =
-      (linkEl?.getAttribute("href") ?? linkEl?.textContent ?? "").trim();
-    const updatedRaw =
-      (it.querySelector("updated")?.textContent ??
-        it.querySelector("published")?.textContent ??
-        "").trim();
-    const dateMs = Date.parse(updatedRaw);
-    const summary = stripHtml(it.querySelector("summary")?.textContent ?? "");
-
-    if (!title || !link) continue;
-    items.push({
-      sourceId: feedMeta.id,
-      sourceName: feedMeta.name,
-      title,
-      url: link,
-      dateMs: Number.isNaN(dateMs) ? 0 : dateMs,
-      excerpt: clampText(summary, 220),
-    });
-  }
-
-  return items;
 }
 
 async function fetchFeed(feed, { forceRefresh, signal } = {}) {
@@ -858,4 +822,5 @@ loadAll().catch(() => {
   setStatus("Couldn't load data. Check your connection or try again.");
   if (gamesGrid) renderFallbackCards();
 });
+
 

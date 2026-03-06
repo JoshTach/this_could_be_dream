@@ -1,4 +1,5 @@
 import { GAMES } from "./sources.js";
+import { parseRssItems, chooseBestRssItem, fetchFeedXml } from "./rss-utils.js";
 
 // Support ?game=id (preferred) or #game=id in case query is stripped
 const search = window.location.search || (window.location.hash && window.location.hash.includes("=") ? "?" + window.location.hash.slice(1) : "");
@@ -180,6 +181,29 @@ function showNonSteamPlaceholder(game) {
   bodyEl.innerHTML = "<p>Patch notes and updates for this game are not on Steam. Use the link above to check the official site.</p>";
 }
 
+function fmtDateFromMs(ms) {
+  if (!ms) return "";
+  const d = new Date(ms);
+  return Number.isNaN(d.getTime()) ? "" : d.toLocaleString(undefined, { year: "numeric", month: "long", day: "numeric" });
+}
+
+function showRssArticle(game, item) {
+  setGameTheme(game);
+  loadingEl.hidden = true;
+  errorEl.hidden = true;
+  contentEl.hidden = false;
+  ogLink.href = item.url || game.officialUrl || "#";
+  ogLink.textContent = "Read original →";
+  ogLink.hidden = false;
+  metaEl.textContent = `${item.sourceName ?? "Riot News"} • ${fmtDateFromMs(item.dateMs)}`;
+  titleEl.textContent = item.title || "Patch notes";
+  const excerpt = String(item.excerpt ?? "").trim();
+  bodyEl.innerHTML = excerpt
+    ? `<p>${escapeHtml(excerpt)}</p><p><a href="${escapeHtml(item.url || "#")}" rel="noopener">Read the full article on the official site →</a></p>`
+    : "<p>No excerpt available. Use the link above to read the original.</p>";
+  if (summaryEl) summaryEl.hidden = true;
+}
+
 async function loadArticle() {
   if (!gameId) {
     showError("Missing game. Open an article from the main page.");
@@ -193,6 +217,19 @@ async function loadArticle() {
   }
 
   if (!game.steamAppId) {
+    if (game.rssUrl) {
+      try {
+        const xml = await fetchFeedXml(game.rssUrl);
+        const items = parseRssItems(xml, { id: game.id, name: game.name });
+        const chosen = chooseBestRssItem(items, game.keywords || ["patch", "update", "notes"]);
+        if (chosen) {
+          showRssArticle(game, chosen);
+          return;
+        }
+      } catch {
+        // Fall through to placeholder
+      }
+    }
     showNonSteamPlaceholder(game);
     return;
   }
